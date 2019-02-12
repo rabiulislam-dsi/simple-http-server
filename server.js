@@ -12,26 +12,47 @@ const knex = require("knex")({
 });
 
 const server = http.createServer((req, res) => {
+  //parse the url
   const parsedUrl = url.parse(req.url, true);
   const path = parsedUrl.pathname;
   const query = parsedUrl.query;
 
+  // root
   if (path == "/") {
     res.end("Welcome.\n");
-  } else if (path == "/about") {
+  }
+  // /about route
+  else if (path == "/about") {
     res.end("This is a simple http server.\n");
-  } else if (path == "/api/students") {
+  }
+  // student crud api
+  else if (path == "/api/students") {
+    // GET a student's data
     if (req.method == "GET") {
       knex("students")
         .where("student_id", query.id)
         .asCallback((err, rows) => {
+          //if an error occurs
           if (err) {
             console.log(err);
-          } else {
-            res.end(JSON.stringify({ result: rows }));
+            res.end(
+              JSON.stringify({ message: "An error occured", error: err })
+            );
+          }
+          // no error ocurred
+          else {
+            if (rows.length > 0) {
+              res.end(JSON.stringify({ student: rows }));
+            }
+            // no data matched
+            else {
+              res.end(JSON.stringify({ message: "No data found" }));
+            }
           }
         });
-    } else if (req.method == "POST") {
+    }
+    // INSERT a new student
+    else if (req.method == "POST") {
       let newStudent = {
         student_name: query.name,
         student_grade: query.grade,
@@ -40,38 +61,66 @@ const server = http.createServer((req, res) => {
       knex("students")
         .insert(newStudent)
         .asCallback((err, rows) => {
+          //if an error occurs
           if (err) {
             console.log(err);
-          } else {
-            res.end(JSON.stringify({ result: rows }));
+            res.end(
+              JSON.stringify({ message: "An error occured", error: err })
+            );
+          }
+          // no error ocurred
+          else {
+            res.end(
+              JSON.stringify({
+                message: "New student data inserted"
+              })
+            );
           }
         });
-    } else if (req.method == "PUT") {
+    }
+    //UPDATE an existing student
+    else if (req.method == "PUT") {
       knex("students")
         .where("student_id", query.id)
         .asCallback((err, rows) => {
+          //if an error occurs
           if (err) {
+            res.end(
+              JSON.stringify({ message: "An error occured:", error: err })
+            );
             console.log(err);
-          } else {
-            let updatedStudent = {
-              student_name: query.name ? query.name : rows[0].student_name,
-              student_grade: query.grade ? query.grade : rows[0].student_grade,
-              student_age: query.age ? query.age : rows[0].student_age
-            };
-
-            knex("students")
-              .where("student_id", query.id)
-              .update(updatedStudent)
-              .asCallback((err, rows) => {
-                if (err) {
-                  console.log(err);
-                } else {
-                  res.end(JSON.stringify({ result: rows }));
-                }
-              });
+          } // no error ocurred
+          else {
+            //data not found
+            if (rows.length == 0) {
+              res.end(
+                JSON.stringify({
+                  message: "Data not found"
+                })
+              );
+            }
+            //data found
+            else {
+              let updatedStudentInfo = {};
+              if (query.name) updatedStudentInfo.student_name = query.name;
+              if (query.grade) updatedStudentInfo.student_grade = query.grade;
+              if (query.age) updatedStudentInfo.student_age = query.age;
+              knex("students")
+                .where("student_id", query.id)
+                .update(updatedStudentInfo)
+                .asCallback((err, rows) => {
+                  if (err) {
+                    console.log(err);
+                  } else {
+                    res.end(JSON.stringify({ result: rows }));
+                  }
+                });
+            }
           }
         });
-    } else {
+    }
+    // DELETE a student data
+    else if (req.method == "DELETE") {
       knex("students")
         .where("student_id", query.id)
         .del()
@@ -82,16 +131,12 @@ const server = http.createServer((req, res) => {
             if (rows == 0) {
               res.end(
                 JSON.stringify({
-                  success: false,
-                  result: rows,
-                  message: "Data doesn't exist"
+                  message: "Data not found"
                 })
               );
             } else {
               res.end(
                 JSON.stringify({
-                  success: true,
-                  result: rows,
                   message: "Deleted the item"
                 })
               );
@@ -99,7 +144,17 @@ const server = http.createServer((req, res) => {
           }
         });
     }
-  } else {
+    // No method matched
+    else {
+      res.end(
+        JSON.stringify({
+          message: "Can't handle this method"
+        })
+      );
+    }
+  }
+  //No route matched
+  else {
     res.end("Not sure about what you want.\n");
   }
 });
