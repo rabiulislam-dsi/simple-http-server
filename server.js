@@ -19,13 +19,16 @@ const server = http.createServer((req, res) => {
 
   // root
   if (path == "/") {
-    res.end("Welcome.\n");
+    res.writeHead(200, { "Content-Type": "text/plain" });
+    res.end("Welcome.");
   }
   // /about route
   else if (path == "/about") {
-    res.end("This is a simple http server.\n");
+    res.writeHead(200, { "Content-Type": "text/plain" });
+    res.end("This is a simple http server.");
   }
-  // student crud api
+  // student crud apis
+  // GET method - Get a student's data
   else if (path == "/api/students") {
     // GET a student's data
     if (req.method == "GET") {
@@ -35,23 +38,24 @@ const server = http.createServer((req, res) => {
           //if an error occurs
           if (err) {
             console.log(err);
-            res.end(
-              JSON.stringify({ message: "An error occured", error: err })
-            );
+            res.writeHead(500, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ message: "Internal Server Error" }));
           }
           // no error ocurred
           else {
             if (rows.length > 0) {
+              res.writeHead(200, { "Content-Type": "application/json" });
               res.end(JSON.stringify({ student: rows }));
             }
             // no data matched
             else {
-              res.end(JSON.stringify({ message: "No data found" }));
+              res.writeHead(204, { "Content-Type": "application/json" });
+              res.end(JSON.stringify({ message: "No Content", student: rows }));
             }
           }
         });
     }
-    // INSERT a new student
+    // POST method - INSERT a new student
     else if (req.method == "POST") {
       let newStudent = {
         student_name: query.name,
@@ -64,15 +68,15 @@ const server = http.createServer((req, res) => {
           //if an error occurs
           if (err) {
             console.log(err);
-            res.end(
-              JSON.stringify({ message: "An error occured", error: err })
-            );
+            res.writeHead(500, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ message: "Internal Server Error" }));
           }
           // no error ocurred
           else {
+            res.writeHead(200, { "Content-Type": "application/json" });
             res.end(
               JSON.stringify({
-                message: "New student data inserted"
+                message: "Inserted new student data successfully"
               })
             );
           }
@@ -80,41 +84,36 @@ const server = http.createServer((req, res) => {
     }
     //UPDATE an existing student
     else if (req.method == "PUT") {
+      let updatedStudentInfo = {};
+      if (query.name) updatedStudentInfo.student_name = query.name;
+      if (query.grade) updatedStudentInfo.student_grade = query.grade;
+      if (query.age) updatedStudentInfo.student_age = query.age;
+
       knex("students")
         .where("student_id", query.id)
+        .update(updatedStudentInfo)
         .asCallback((err, rows) => {
-          //if an error occurs
           if (err) {
-            res.end(
-              JSON.stringify({ message: "An error occured:", error: err })
-            );
             console.log(err);
-          } // no error ocurred
-          else {
-            //data not found
-            if (rows.length == 0) {
+            res.writeHead(500, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ message: "Internal Server Error" }));
+          } else {
+            if (rows == 0) {
+              res.writeHead(404, { "Content-Type": "application/json" });
               res.end(
                 JSON.stringify({
-                  message: "Data not found"
+                  message: "Not Found"
                 })
               );
             }
-            //data found
+            // no error ocurred
             else {
-              let updatedStudentInfo = {};
-              if (query.name) updatedStudentInfo.student_name = query.name;
-              if (query.grade) updatedStudentInfo.student_grade = query.grade;
-              if (query.age) updatedStudentInfo.student_age = query.age;
-              knex("students")
-                .where("student_id", query.id)
-                .update(updatedStudentInfo)
-                .asCallback((err, rows) => {
-                  if (err) {
-                    console.log(err);
-                  } else {
-                    res.end(JSON.stringify({ result: rows }));
-                  }
-                });
+              res.writeHead(200, { "Content-Type": "application/json" });
+              res.end(
+                JSON.stringify({
+                  message: "Updated student data successfully"
+                })
+              );
             }
           }
         });
@@ -127,17 +126,23 @@ const server = http.createServer((req, res) => {
         .asCallback((err, rows) => {
           if (err) {
             console.log(err);
+            res.writeHead(500, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ message: "Internal Server Error" }));
           } else {
             if (rows == 0) {
+              res.writeHead(404, { "Content-Type": "application/json" });
               res.end(
                 JSON.stringify({
-                  message: "Data not found"
+                  message: "Not Found"
                 })
               );
-            } else {
+            }
+            // no error ocurred
+            else {
+              res.writeHead(200, { "Content-Type": "application/json" });
               res.end(
                 JSON.stringify({
-                  message: "Deleted the item"
+                  message: "Deleted student data successfully"
                 })
               );
             }
@@ -146,16 +151,14 @@ const server = http.createServer((req, res) => {
     }
     // No method matched
     else {
-      res.end(
-        JSON.stringify({
-          message: "Can't handle this method"
-        })
-      );
+      res.writeHead(404, { "Content-Type": "text/plain" });
+      res.end("Not Found");
     }
   }
   //No route matched
   else {
-    res.end("Not sure about what you want.\n");
+    res.writeHead(404, { "Content-Type": "text/plain" });
+    res.end("Not Found");
   }
 });
 
