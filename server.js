@@ -22,12 +22,15 @@ const server = http.createServer((req, res) => {
     res.writeHead(200, { "Content-Type": "text/plain" });
     res.end("Welcome.");
   }
+
   // /about route
   else if (path == "/about") {
     res.writeHead(200, { "Content-Type": "text/plain" });
     res.end("This is a simple http server.");
   }
+
   // student crud apis
+
   // GET method - Get a student's data
   else if (path == "/api/students") {
     // GET a student's data
@@ -55,6 +58,7 @@ const server = http.createServer((req, res) => {
           }
         });
     }
+
     // POST method - INSERT a new student
     else if (req.method == "POST") {
       let newStudent = {
@@ -82,7 +86,8 @@ const server = http.createServer((req, res) => {
           }
         });
     }
-    //UPDATE an existing student
+
+    // PUT method - UPDATE an existing student
     else if (req.method == "PUT") {
       let updatedStudentInfo = {};
       if (query.name) updatedStudentInfo.student_name = query.name;
@@ -93,11 +98,15 @@ const server = http.createServer((req, res) => {
         .where("student_id", query.id)
         .update(updatedStudentInfo)
         .asCallback((err, rows) => {
+          //if an error occurs
           if (err) {
             console.log(err);
             res.writeHead(500, { "Content-Type": "application/json" });
             res.end(JSON.stringify({ message: "Internal Server Error" }));
-          } else {
+          }
+          // no error ocurred
+          else {
+            //if no row is affected
             if (rows == 0) {
               res.writeHead(404, { "Content-Type": "application/json" });
               res.end(
@@ -106,7 +115,7 @@ const server = http.createServer((req, res) => {
                 })
               );
             }
-            // no error ocurred
+            // successful update
             else {
               res.writeHead(200, { "Content-Type": "application/json" });
               res.end(
@@ -118,17 +127,22 @@ const server = http.createServer((req, res) => {
           }
         });
     }
-    // DELETE a student data
+
+    // DELETE method - DELETE a student data
     else if (req.method == "DELETE") {
       knex("students")
         .where("student_id", query.id)
         .del()
         .asCallback((err, rows) => {
+          //if an error occurs
           if (err) {
             console.log(err);
             res.writeHead(500, { "Content-Type": "application/json" });
             res.end(JSON.stringify({ message: "Internal Server Error" }));
-          } else {
+          }
+          //no error occurred
+          else {
+            //if no rows is affected
             if (rows == 0) {
               res.writeHead(404, { "Content-Type": "application/json" });
               res.end(
@@ -137,7 +151,7 @@ const server = http.createServer((req, res) => {
                 })
               );
             }
-            // no error ocurred
+            // successful deletion
             else {
               res.writeHead(200, { "Content-Type": "application/json" });
               res.end(
@@ -155,6 +169,7 @@ const server = http.createServer((req, res) => {
       res.end("Not Found");
     }
   }
+
   //No route matched
   else {
     res.writeHead(404, { "Content-Type": "text/plain" });
